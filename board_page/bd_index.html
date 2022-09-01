@@ -1,0 +1,147 @@
+﻿<?php
+	require_once("dbconfig.php");
+	
+	session_start();
+
+	if(isset($_SESSION['user_id'] )) {
+		
+		$user_id = $_SESSION['user_id'];
+		echo "<p>안녕하세요. $user_id 님 </p>";
+		echo "<p><a href='logout.php'>로그아웃</a></p>";
+	}
+
+	/* 검색 시작 */
+		
+	if(isset($_GET['searchColumn'])) {
+		$searchColumn = $_GET['searchColumn'];
+		$subString .= '&amp;searchColumn=' . $searchColumn;
+	}
+	if(isset($_GET['searchText'])) {
+		$searchText = $_GET['searchText'];
+		$subString .= '&amp;searchText=' . $searchText;
+	}
+		
+	if(isset($searchColumn) && isset($searchText)) {
+		$searchSql = ' where ' . $searchColumn . ' like "%' . $searchText . '%"';
+	} else {
+		$searchSql = '';
+	}
+	
+	/* 검색 끝 */
+	
+	if(isset($_GET['searchText'])){
+
+		$sql = 'select * from board'.$searchSql.'order by b_no desc';
+		$result = mysqli_query($db, $sql);
+
+		$c_sql = 'select count(*) cnt from board'.$searchSql.'order by b_no desc';
+		$c_result = mysqli_query($db, $c_sql);
+
+	} else {
+
+		$sql = 'select * from board order by b_no desc';
+		$result = mysqli_query($db, $sql);
+	}
+?>
+
+<html>
+<head>
+	<title>Change's Board</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf8"/>
+	<link rel="stylesheet" href="css/normalize.css" />
+	<link rel="stylesheet" href="css/board.css?ver=1.02" />
+</head>
+<body>
+	<article class="boardArticle">
+		<h3> &nbsp 자유게시판 </h3>
+		<div id="boardList">
+<?php
+		if(!isset($_SESSION['user_id'] )){
+?>
+			<div class = "btnSet">	
+				<form action = "./login.php" method = "post">
+	
+    						<input type="text" name="login_id" placeholder="아이디" />
+    						<input type="password" name="login_pw" placeholder="패스워드" />
+						<button type="submit" name="login_submit">로그인</button>
+				</form>
+			</div>
+<?php
+		}
+?>
+		
+			<table>
+				<caption class="readHide"> 자유게시판 </caption>
+	
+				<thead>
+					<tr>
+						<th scope="col" class="no">&nbsp번호</th>
+						<th scope="col" class="title">&nbsp제목</th>
+						<th scope="col" class="author">&nbsp작성자</th>
+						<th scope="col" class="date">&nbsp작성일</th>
+						<th scope="col" class="hit">조회&nbsp</th>
+					</tr>
+				</thead>
+				<tbody>
+<?php
+
+				while($row = $result->fetch_assoc()) {
+					$datetime = explode(' ', $row['b_date']);
+					$date = $datetime[0];
+					$time = $datetime[1];
+
+					if($date == Date('YYYY-MM-DD'))
+						$row['b_date'] = $time;
+					else
+						$row['b_date'] = $date;
+?>
+
+
+				<tr>
+					<td class="no"><?php echo $row['b_no']?></td>
+					<td class="title">
+						<a href="./view.php?bno=<?php echo $row['b_no']?>">
+							<?php echo $row['b_title']?>
+						</a>
+					</td>
+
+					<td class="author"><?php echo $row['b_id']?></td>
+					<td class="date"><?php echo $row['b_date']?></td>
+					<td class="hit"><?php echo $row['b_hit']?></td>
+				</tr>
+
+<?php
+				}
+?>
+				
+			</tbody>
+		
+		</table>
+
+		<div class = "btnSet">
+
+			<form action = "./write.php" method = "get">
+
+				<button type = "submit"> 글쓰기 </button>		
+
+			</form>	
+
+		</div>
+
+		<div class="searchBox">
+			<form action="./bd_index.html" method="get">
+				<select name="searchColumn">
+					<option <?php echo $searchColumn=='b_title'?'selected="selected"':null?> value="b_title">제목</option>
+					<option <?php echo $searchColumn=='b_content'?'selected="selected"':null?> value="b_content">내용</option>
+					<option <?php echo $searchColumn=='b_id'?'selected="selected"':null?> value="b_id">작성자</option>
+				</select>
+				<input type="text" name="searchText" size="40" value="<?php echo isset($searchText)?$searchText:null?>">
+				<button type="submit" name="searchBtn">검색</button>
+			</form>
+		</div>
+	</div>
+
+	</article>
+</body>
+</head>
+</html>
